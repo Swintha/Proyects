@@ -1,0 +1,324 @@
+///Arcivho app.js
+
+Titanium.include('insertar.js','listar.js');
+
+Titanium.UI.setBackgroundColor('#95FFCA');
+
+var tabGroup = Titanium.UI.createTabGroup();
+
+var win1 = insertarWin();
+
+var tab1 = Titanium.UI.createTab({
+    icon:'KS_nav_views.png',
+    title:'Insertar',
+    window:win1
+});
+
+var win2 = listarWin();
+
+var tab2 = Titanium.UI.createTab({
+    icon:'KS_nav_ui.png',
+    title:'Listar',
+    window:win2
+});
+
+tabGroup.addTab(tab1);
+tabGroup.addTab(tab2);  
+tabGroup.open();
+
+//// Archivo insertar.js
+
+var insertarWin = function() {
+
+	var win = Titanium.UI.createWindow({
+		title : 'Insertar',
+		backgroundColor : '#D5FFD5'
+	});
+
+	var vista = Ti.UI.createScrollView({
+		backgroundColor : 'transparent',
+		width:320,
+		height:480,
+		top:5});
+	win.add(vista);
+
+	var titulo = Ti.UI.createTextField({
+		title:'TITULO',
+		backgroundColor : '#15FF15',
+		hintText:'Título',
+		color:'black',
+		height:50, 
+		width:300,
+		top:40,
+		left:10});
+	vista.add(titulo);
+
+	var nota = Ti.UI.createTextField({
+		title:'NOTA',
+		backgroundColor : '#15FF15',
+		hintText:'Nota', 
+		color:'black',
+		height:50, 
+		width:300,
+		top:100,
+		left:10});
+	vista.add(nota);
+
+	var insertar_btn = Ti.UI.createButton({
+		title:'Insertar', 
+		width:200,
+		height:40,
+		center:{x:(win.width/2),y:320},
+		backgroundColor : '#7F7F7F'});
+	vista.add(insertar_btn);
+
+	insertar_btn.addEventListener('click',function(e){
+		if(titulo.value == '' || nota.value == ''){
+			alert('Debe rellenar todos los campos');
+			return;
+		};
+
+		insertarDev({
+			titulo:titulo.value,
+			nota:nota.value
+		});
+	});
+
+	win.addEventListener('focus', function(e) {
+		vista.scrollTo(0, -5);
+	});
+	titulo.addEventListener('blur',function(e){
+		vista.scrollTo(0, -5);
+	});
+	nota.addEventListener('blur',function(e){
+		vista.scrollTo(0, -5);
+	});
+	vista.addEventListener('scroll',function(e){
+		if(e.dragging){
+			win.fireEvent('focus');
+		};
+	});
+
+	return win;
+};
+
+var insertarDev = function(datos) {
+	if( typeof (datos) === 'object') {
+		
+			var db = Ti.Database.install('notas.db', 'notas');
+			db.execute('INSERT INTO notas (titulo, nota) VALUES(?,?)', datos.titulo, datos.nota);
+			db.close();
+
+			alert('nueva nota añadida');
+
+	} else {
+		return false;
+	};
+};
+
+//// Archivo listar.js
+
+var listarWin = function() {
+	var win = Titanium.UI.createWindow({
+		title : 'Listar',
+		backgroundColor : '#fff'
+	});
+	var tableview = Ti.UI.createTableView({
+		minRowHeight : 60,
+		maxRowHeight : 120,
+		editable : true
+	});
+
+	win.add(tableview);
+
+	var cargarLista = function() {
+
+		var datos = [];
+
+		var db = Ti.Database.install('notas.db', 'notas');
+		var filas = db.execute('SELECT * FROM notas');
+
+		var c = 0;
+		var rowbg = '#fff';
+
+		while(filas.isValidRow()) {
+
+			rowbg = (c % 2 == 0) ? '#fff' : '#15FF15';
+
+			var row = Ti.UI.createTableViewRow({
+				height : 'auto',
+				textAlign : 'left',
+				width : '100%',
+				className : 'dos_colores',
+				backgroundColor : rowbg,
+				objName: 'row',
+    			touchEnabled: true
+			});
+			
+			 var rowView = Ti.UI.createView({
+			 	backgroundColor : 'transparent',
+   				objName: 'rowView',
+    			rowID: filas.fieldByName('id'),
+    			width: Ti.UI.FILL, 
+    			height: '100%'
+ 				});
+				
+
+			var titulo = Ti.UI.createLabel({
+				text:filas.fieldByName('titulo'),
+				width:'auto',
+				height : 'auto',
+				left : 15,
+				top : 10,
+				textAlign : 'left',
+				font : {
+					fontSize : 18,
+					fontWeight : 'bold'
+				},
+				color : '#000'
+			});
+
+			var nota = Ti.UI.createLabel({
+				text:filas.fieldByName('nota'),
+				width:'auto',
+				height : 'auto',
+				left : 15,
+				top : 30,
+				textAlign : 'left',
+				font : {
+					fontSize : 15
+				},
+				color : '#000111'
+			});
+
+			var fecha = Ti.UI.createLabel({
+				text:filas.fieldByName('fecha'),
+				width:'auto',
+				height : 'auto',
+				left : 15,
+				top : 45,
+				bottom:10,
+				textAlign : 'left',
+				font : {
+					fontSize : 15
+				},
+				color : '#000111'
+			});
+					
+			rowView.add(titulo);
+			rowView.add(nota);
+			row.add(rowView);
+			row.add(fecha);
+			datos.push(row);			
+			c++;
+			filas.next();
+		};
+
+		filas.close();
+		db.close();
+
+		tableview.data = datos;
+	};
+
+	win.addEventListener('focus', function() {
+		cargarLista();
+	});
+	
+	tableview.addEventListener('click', function(e){
+		var identificador= e.source.rowID;
+		var ver= Titanium.UI.createWindow({
+		title : 'Editar nota',
+		backgroundColor : 'white'
+		});
+		
+		var db= Ti.Database.install('notas.db','notas');
+		var sel= db.execute('SELECT titulo, nota FROM notas WHERE id='+ identificador);
+		var upd_t = sel.fieldByName('titulo');
+		var upd_n = sel.fieldByName('nota');
+		db.close();
+					
+		var titulo = Ti.UI.createTextField({
+		title:'TITULO',
+		backgroundColor : 'white',
+		value: upd_t,
+		font : {fontSize : 18, fontWeight : 'bold'},
+		color:'black',
+		height:50, 
+		width:300,
+		top:40,
+		left:10});
+		ver.add(titulo);
+
+		var nota = Ti.UI.createTextField({
+		title:'NOTA',
+		backgroundColor : 'white',
+		value: upd_n, 
+		color:'black',
+		height:50, 
+		width:300,
+		top:100,
+		left:10});
+		ver.add(nota);
+	
+		var b_borrar= Ti.UI.createButton({
+			title:'Eliminar', 
+			width:'auto',
+			height:40,
+			bottom:10,
+			center:{x:(win.width/2)},
+			backgroundColor : 'red'
+			});
+		var b_edit= Ti.UI.createButton({
+			title:'Modificar', 
+			width:'auto',
+			height:40,
+			bottom:10,
+			right: 15,
+			backgroundColor : 'blue'
+			});
+		var b_cerrar= Ti.UI.createButton({
+			title:'Cerrar', 
+			width:'auto',
+			height:40,
+			bottom:10,
+			left: 15,
+			backgroundColor : 'green'
+			});
+		
+		ver.add(b_borrar);
+		ver.add(b_cerrar);
+		ver.add(b_edit);
+		
+		b_borrar.addEventListener('click',function(){ 
+				var db= Ti.Database.install('notas.db','notas');
+				db.execute('DELETE FROM notas WHERE id='+ identificador);
+				db.close();
+				ver.close();
+				return win;
+				});
+		b_cerrar.addEventListener('click', function(){
+				ver.close();
+				});
+		b_edit.addEventListener('click', function(e) {
+				var db = Ti.Database.install('notas.db', 'notas');
+				db.execute('UPDATE notas SET titulo="'+titulo.value+'", nota="'+nota.value+'" WHERE id='+ identificador);
+				db.close();
+				ver.close();
+				return win;
+				});
+		
+		ver.open();
+	});
+	
+	return win;
+};
+/// Base de datos SQLite3
+
+CREATE TABLE notas (
+    id     INTEGER      PRIMARY KEY AUTOINCREMENT
+                        NOT NULL
+                        UNIQUE,
+    titulo VARCHAR (20) NOT NULL,
+    nota   TEXT         NOT NULL,
+    fecha  DATETIME     DEFAULT (CURRENT_TIMESTAMP) 
+);
