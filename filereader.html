@@ -1,0 +1,93 @@
+<!--Read a plain text file, make actions and process the string, print a report and export it in plain text file using only  HTML and JavaScript-->
+<html>
+<head>
+	
+</head>
+<body>
+<h3>Select a .TXT file</h3>
+
+<input type="file" id="fileinput" /><!--HTML files API input-->
+      <form>
+         <textarea name="text" id="readarea" rows="20" cols="170">loaded text here</textarea>
+      </form>
+			File Name <input type="text" name="filename" id="filename">
+			File type <input type="text" name="filetype" id="filetype"></br>
+			</br>
+			<h2>Reporting results</h2><h2 id="e"></h2>
+
+<div id="div1"></div>
+
+
+
+<script type="text/javascript">
+	
+//Export to txt function
+function exp(){
+						var a = document.body.appendChild(document.createElement("a"));
+						a.download = "export.txt";
+						a.href = "data:text/plain," + document.getElementById("info").value;
+						a.click();
+						}
+//unique elements on array function
+var dwords = function(v, i, o){return v!==o [i-1]};
+
+  function readSingleFile(evt) {
+    //Read a sigle file using the files API with the element input type file of HTML
+    var newfile = evt.target.files[0]; 
+
+    if (newfile) {
+      var r = new FileReader();
+      r.onload = function(e) { 
+	      var contents = e.target.result;//the result property content the data of the file
+				document.getElementById("readarea").value = contents.substr();
+				var filen = newfile.name;
+				var filet = newfile.type;
+				document.getElementById("filename").value = filen;
+				document.getElementById("filetype").value = filet;
+				//Export information to txt button create
+
+				var str= document.getElementById("readarea").value;
+				var slength= str.length;
+				var lines= str.split("\n").length;
+				str = str.toLowerCase();
+				var str1 = str.replace(/[¿!¡;,:\.\?#@()"]/g,"");
+				var uniquewords = str1.split(/\s+/).sort().filter(dwords);
+				var uniquewordcount = uniquewords.length;
+				str= str.replace(/\n/g, " ");
+				var wnumber= str.split(" ").length;
+				var x = "The file "+ filen + " type " + filet + " is processed.\nTotal Characters: " + slength + "\nTotal lines: " + lines + "\nTotal words: " + wnumber + "\nTotal unique words: "+ uniquewordcount+ "\nUnique words list: " + uniquewords ;
+				//create div tag to insert the report information
+				var newTag = document.createElement("textarea");
+				newTag.setAttribute= ("name","info");
+				newTag.id = "info";
+				newTag.rows ="20";
+				newTag.cols ="170";
+				var newContent = document.createTextNode( x );
+				newTag.appendChild(newContent);
+				var Div = document.getElementById("div1"); 
+				document.body.insertBefore(newTag, Div);
+								
+				if (filen !== null){
+					//confirm the file update and create a export button
+					var newTag2 = document.createElement("input");
+					newTag2.setAttribute("type","button");
+					newTag2.setAttribute("value","Export Report");
+					newTag2.setAttribute("onclick",'exp();');
+					var butt = document.getElementById("e");
+					document.body.insertBefore(newTag2, butt);
+            }
+		
+
+				
+      };
+      r.readAsText(f);//use the attribute to decode the file content in UTF-8, predefine format
+    } else { 
+      alert("Loading failed");
+    }
+  }
+
+  document.getElementById("fileinput").addEventListener("change", readSingleFile, false);
+	
+</script>
+</body>
+</html>
